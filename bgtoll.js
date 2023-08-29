@@ -17,6 +17,7 @@ if (!plateRegex.test(plate)) {
     const searchSelector = "button.btn.btn-success.btn-sm";
     const resultSelector = "div.CheckResult.container > div > table > tbody";
     const errorSelector = "div.fade.alert.alert-warning.show";
+    const fuzzyErrorSelector = "div.fade.alert.alert-success.show";
 
     await page.goto(url);
     await page.waitForSelector(inputSelector);
@@ -25,20 +26,27 @@ if (!plateRegex.test(plate)) {
     await page.click(searchSelector);
 
     try {
-        const textSelector = await page.waitForSelector(resultSelector, { timeout });
-        const result = await textSelector?.evaluate((el) => el.innerText);
-        console.log(result.split("\t"));
+        console.log((await getResult(resultSelector)).split("\t"));
     } catch (e) {
         if (e instanceof puppeteer.TimeoutError) {
             try {
-                const textSelector = await page.waitForSelector(errorSelector, { timeout });
-                const result = await textSelector?.evaluate((el) => el.innerText);
-                console.log(result);
+                console.log(await getResult(errorSelector));
             } catch (e) {
-                console.warn("Няма резултат!");
+                try {
+                    console.log(await getResult(fuzzyErrorSelector));
+                } catch (e) {
+                    console.warn("Няма резултат!");
+                }
             }
         }
     }
 
     await browser.close();
+
+    async function getResult(selector) {
+        const textSelector = await page.waitForSelector(selector, { timeout });
+        const result = await textSelector?.evaluate((el) => el.innerText);
+
+        return result;
+    }
 })();
