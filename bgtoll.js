@@ -1,6 +1,6 @@
 const puppeteer = require("puppeteer");
 const plate = process.argv[2];
-const timeout = 2048;
+const timeout = 1024;
 const plateRegex = /^[\p{L}]{1,3}\d{4,8}[\p{L}]{1,3}$/u;
 
 // exclude spoiled personalities
