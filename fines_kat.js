@@ -1,36 +1,51 @@
-const puppeteer = require("puppeteer");
-const driverID = process.argv[2];
-const driverEGN = process.argv[3];
-const timeout = 1024;
+const fetch = require("node-fetch");
+const { program } = require("commander");
+const url = new URL("https://e-uslugi.mvr.bg/api/Obligations/AND");
 
-(async () => {
-    const browser = await puppeteer.launch({ headless: "new" });
-    const page = await browser.newPage();
-    const url = "https://e-uslugi.mvr.bg/services/kat-obligations";
-    const inputIdentity = "#byIdentity";
-    const inputDriverID = "#drivingLicenceNumber";
-    const inputDriverEGN = "#obligedPersonIdent";
-    const inputSearch = "div.right-side > button.btn.btn-primary";
-    const resSelector = "div.alert.alert-warning.mt-0.mb-4";
+program
+    .name("node fines_kat.js")
+    .description("команден скрипт за проверка на задължения към КАТ")
+    .requiredOption("--egn <number>", "или ЕГН, или ЛНЧ, или ЛН")
+    .option("--licence <number>", "лицензен номер на шофьора")
+    .option("--plate <string>", "регистрационен номер на МПС")
+    .helpOption("--help", "показва тази помощна информация")
+    .parse();
 
-    await page.goto(url);
-    await page.waitForSelector(inputIdentity);
+const { egn, licence, plate } = program.opts();
 
-    if (!(await (await (await page.$(inputIdentity)).getProperty("checked")).jsonValue())) {
-        await page.click(inputIdentity);
-    }
+// Enforce "licence OR plate must be provided"
+if (!licence && !plate) {
+    console.error("Необходим е или лицензен номер на шофьора, или регистрационен номер на МПС.");
+    console.error("Употреба: node fines_kat.js --egn <number> --licence <number>");
+    console.error("     или: node fines_kat.js --egn <number> --plate <string>");
+    process.exit(1);
+}
 
-    await page.waitForSelector(inputDriverID);
-    await page.waitForSelector(inputDriverEGN);
-    await page.type(inputDriverID, driverID);
-    await page.type(inputDriverEGN, driverEGN);
-    
-    await page.waitForSelector(inputSearch);
-    await page.click(inputSearch);
+url.searchParams.set("obligatedPersonType", "1");
+url.searchParams.set("mode", "1");
+url.searchParams.set("obligedPersonIdent", egn);
 
-    await page.waitForSelector(resSelector, { timeout });
+if (licence) {
+    url.searchParams.set("additinalDataForObligatedPersonType", "1");
+    url.searchParams.append("drivingLicenceNumber", licence);
+} else {
+    url.searchParams.append("additinalDataForObligatedPersonType", "3");
+    url.searchParams.set("foreignVehicleNumber", plate);
+}
 
-    console.log(await page.$$eval(resSelector, (e) => e.map((e) => e.innerText)));
+checkObligations()
+    .then((data) => console.log(JSON.stringify(data, null, 2)))
+    .catch((err) => console.error(err));
 
-    await browser.close();
-})();
+async function checkObligations() {
+    const res = await fetch(url, {
+        headers: {
+            Referer: "https://e-uslugi.mvr.bg/services/obligations",
+            Accept: "application/json",
+        },
+    });
+
+    if (!res.ok) throw new Error(`HTTP error ${res.status}`);
+
+    return await res.json();
+}
