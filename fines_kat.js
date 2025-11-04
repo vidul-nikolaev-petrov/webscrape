@@ -15,9 +15,15 @@ const { egn, licence, plate } = program.opts();
 
 // Enforce "licence OR plate must be provided"
 if (!licence && !plate) {
-    console.error("Необходим е или лицензен номер на шофьора, или регистрационен номер на МПС.");
-    console.error("Употреба: node fines_kat.js --egn <number> --licence <number>");
-    console.error("     или: node fines_kat.js --egn <number> --plate <string>");
+    console.error(
+        "Необходим е или лицензен номер на шофьора, или регистрационен номер на МПС."
+    );
+    console.error(
+        "Употреба: node fines_kat.js --egn <number> --licence <number>"
+    );
+    console.error(
+        "     или: node fines_kat.js --egn <number> --plate <string>"
+    );
     process.exit(1);
 }
 
@@ -34,7 +40,7 @@ if (licence) {
 }
 
 checkObligations()
-    .then((data) => console.log(JSON.stringify(data, null, 2)))
+    .then((data) => console.log(formatObligation(data)))
     .catch((err) => console.error(err));
 
 async function checkObligations() {
@@ -48,4 +54,14 @@ async function checkObligations() {
     if (!res.ok) throw new Error(`HTTP error ${res.status}`);
 
     return await res.json();
+}
+
+function formatObligation(data) {
+    const obligations = data.obligationsData[0].obligations;
+
+    if (obligations.length === 0) {
+        return "Няма неплатени глоби.";
+    }
+
+    return JSON.stringify(obligations, null, 2);
 }
