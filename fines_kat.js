@@ -1,6 +1,7 @@
 const fetch = require("node-fetch");
 const { program } = require("commander");
 const url = new URL("https://e-uslugi.mvr.bg/api/Obligations/AND");
+const referer = "https://e-uslugi.mvr.bg/services/obligations";
 
 program
     .name("node fines_kat.js")
@@ -33,9 +34,9 @@ url.searchParams.set("obligedPersonIdent", egn);
 
 if (licence) {
     url.searchParams.set("additinalDataForObligatedPersonType", "1");
-    url.searchParams.append("drivingLicenceNumber", licence);
+    url.searchParams.set("drivingLicenceNumber", licence);
 } else {
-    url.searchParams.append("additinalDataForObligatedPersonType", "3");
+    url.searchParams.set("additinalDataForObligatedPersonType", "3");
     url.searchParams.set("foreignVehicleNumber", plate);
 }
 
@@ -46,7 +47,7 @@ checkObligations()
 async function checkObligations() {
     const res = await fetch(url, {
         headers: {
-            Referer: "https://e-uslugi.mvr.bg/services/obligations",
+            Referer: referer,
             Accept: "application/json",
         },
     });
