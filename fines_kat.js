@@ -61,7 +61,7 @@ function formatObligation(data) {
     const obligations = data.obligationsData[0].obligations;
 
     if (obligations.length === 0) {
-        return "Няма неплатени глоби.";
+        return JSON.stringify({"obligationsData": "няма задължения"});
     }
 
     return JSON.stringify(obligations, null, 2);
